@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+# A slightly modified version of the PRS framwork available from
+# http://www.rpscontest.com/rpsrunner.py
+
+# The modifications allow the number of rounds to be determined with a
+# command-line option.
+#
+# Updated by: W. P. du Plessis
+# Ported to Python 3: Kobus van Schoor
+# Last update: 2020-02-04
+
+# Command line to run all agents in a given directory.
+# ./rpsrunner.py -m 10 -r 1000 `ls *.py | egrep -v 'rpsrunner' | tr $'\n' , | sed s/,$//`
+
+# Command line to run all agents in a given directory, except those starting
+# with 3 or 4 numbers followed by an underscore.
+# ./rpsrunner.py -m 10 -r 1000 `ls *.py | egrep '[0-9]{3,4}_' | tr $'\n' , | sed s/,$//`
+
 # Rock-Paper-Scissors runner for http://www.rpscontest.com/
 
 # Copyright (c) 2011 Jonathan Burdge
@@ -40,6 +57,7 @@ import traceback
 
 VERSION = "1.0.1"
 MATCHES = 10
+ROUNDS = 1000
 POOL_SIZE = 1
 
 if Pool is not None:
@@ -391,8 +409,8 @@ def report_results(bots, results):
         rounds_played[ result.bot1.name ] += result.played
         rounds_played[ result.bot2.name ] += result.played
 
-    # sort results for output - sort list by 
-    win_ratio = dict(zip(botnames, 
+    # sort results for output - sort list by
+    win_ratio = dict(zip(botnames,
         map(lambda x: float(matches_won[x]) / matches_played[x], botnames)))
     botnames.sort(lambda x,y: cmp(win_ratio[y], win_ratio[x]))
 
@@ -472,6 +490,7 @@ Rock-Paper-Scissors Runner v%s (http://www.rpscontest.com/)
      -l|--low          Run the process at a lower priority to keep the
                        system responsive.
      -m|--matches <N>  How many matches to play for each pairing [def: %d]
+     -r|--rounds  <N>  How many rounds to play for each pairing [def: %d]
      -t|--threads <N>  How many execution threads to use [def: %d]
         The multiprocessing module must be available to use more than one
         execution thread.  On this host, multiprocessing is: %s
@@ -496,7 +515,7 @@ NOTE: Bots run through this script have full access to the Python
 interpreter, so they could use it to do all sorts of nasty things to your
 computer.  You must review the code for any bot you want to run, and if
 you're not sure what the bot does, then you shouldn't run it.""" % \
-    (VERSION, MATCHES, POOL_SIZE,
+    (VERSION, MATCHES, ROUNDS, POOL_SIZE,
         Pool is not None and "AVAILABLE" or "UNAVAILABLE")
     if msg:
         print "\n\n%s" % msg
@@ -506,12 +525,13 @@ you're not sure what the bot does, then you shouldn't run it.""" % \
 def main(prog_args):
     # defaults
     matches = MATCHES
+    rounds = ROUNDS
     threads = POOL_SIZE
     set_low_priority = False
 
     try:
-        opts, args = getopt.getopt(prog_args, "ht:m:l",
-                ["help", "threads", "matches", "low"])
+        opts, args = getopt.getopt(prog_args, "ht:m:r:l",
+                ["help", "threads", "matches", "rounds", "low"])
     except getopt.GetoptError, e:
         return usage(str(e), exit=2)
 
@@ -535,6 +555,13 @@ def main(prog_args):
                 return usage("Matches must be a positive integer")
             if matches < 1:
                 return usage("Matches must be a positive integer")
+        elif o in ("-r", "--rounds"):
+            try:
+                rounds = int(a)
+            except:
+                return usage("Rounds must be a positive integer larger than 1")
+            if rounds < 1:
+                return usage("Rounds must be a positive integer larger than 1")
         elif o in ("-h", "--help"):
             return usage("", exit=0)
         else:
@@ -578,7 +605,7 @@ def main(prog_args):
     # run contests
     print "Playing %d matches per pairing." % matches
     start_time = time.time()
-    contests = match_maker(bots1, bots2, matches=matches)
+    contests = match_maker(bots1, bots2, matches=matches, rounds=rounds)
     results = run_contests(contests, threads)
     end_time = time.time()
 
