@@ -5,8 +5,13 @@
 
 # The modifications allow the number of rounds to be determined with a
 # command-line option.
+# This debug version also allows you to step through your code using a debugger,
+# at the cost of running much slower than the non-debug version.
+# It is recommended that this code only be used for debugging a single match and
+# that is only be run in one thread, as running it in more threads might confuse
+# the debugger.
 #
-# Updated by: W. P. du Plessis
+# Updated by: W. P. du Plessis and L. Strydom
 # Ported to Python 3: J.B van Schoor
 # Last update: 2020-02-04
 
@@ -84,10 +89,7 @@ name should be a unique identifier and must be a readable
 filename if code is not specified
 """
         self.name = name
-        if code is None:
-            self.load_code()
-        else:
-            self.code = code
+        self.code = code
 
         self.reset()
 
@@ -98,16 +100,10 @@ filename if code is not specified
         """Get the next move for the bot given input
 input must be "R", "P", "S" or ""
 """
-        if self._code is None:
-            self.compile_code()
-
         self.scope["input"] = input
-        exec(self._code, self.scope)
+        exec(open(self.name).read(), self.scope)
         self.output = self.scope["output"]
         return self.output
-
-    def compile_code(self):
-        self._code = compile(self.code, '<string>', 'exec')
 
     def reset(self):
         """Resets bot for another round.  This must be called before trying
@@ -118,12 +114,6 @@ to pickle the bots scope dictionary."""
         # this will hold compiled code, but it apparently can't be
         # pickled? so we'll have to do it later.  XXX check into this
         self._code = None
-
-    def load_code(self):
-        """Load bot code from the file specified by the name attribute"""
-        f = open(self.name, "r")
-        self.code = f.read()
-        f.close()
 
 # used to evaluate a pair of moves
 # scoring[bot1_move][bot2_move]
