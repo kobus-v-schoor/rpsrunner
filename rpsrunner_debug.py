@@ -101,7 +101,8 @@ filename if code is not specified
 input must be "R", "P", "S" or ""
 """
         self.scope["input"] = input
-        exec(open(self.name).read(), self.scope)
+        with open(self.name) as f:
+            exec(f.read(), self.scope)
         self.output = self.scope["output"]
         return self.output
 
